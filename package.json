@@ -17,6 +17,7 @@
     "@react-navigation/native-stack": "^6.9.26",
     "babel-preset-expo": "^55.0.14-canary-20260327-0789fbc",
     "expo": "^55.0.10-canary-20260327-0789fbc",
+    "expo-audio": "55.0.10-canary-20260327-0789fbc",
     "expo-av": "~14.0.7",
     "expo-font": "55.0.5-canary-20260327-0789fbc",
     "expo-haptics": "55.0.10-canary-20260327-0789fbc",

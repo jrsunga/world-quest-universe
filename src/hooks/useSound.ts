@@ -1,56 +1,50 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 
 type SoundName = 'tap' | 'correct' | 'wrong' | 'complete';
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const SOUND_FILES: Record<SoundName, number> = {
-  /* eslint-disable @typescript-eslint/no-require-imports */
   tap: require('../../assets/sounds/tap.wav'),
   correct: require('../../assets/sounds/correct.wav'),
   wrong: require('../../assets/sounds/wrong.wav'),
   complete: require('../../assets/sounds/complete.wav'),
-  /* eslint-enable @typescript-eslint/no-require-imports */
 };
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 export function useSound() {
-  const sounds = useRef<Partial<Record<SoundName, Audio.Sound>>>({});
+  const players = useRef<Partial<Record<SoundName, AudioPlayer>>>({});
 
   useEffect(() => {
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+    // Allow sound to play even when the iOS silent switch is on
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
 
-    let mounted = true;
     const keys = Object.keys(SOUND_FILES) as SoundName[];
-
-    (async () => {
-      for (const name of keys) {
-        try {
-          const { sound } = await Audio.Sound.createAsync(SOUND_FILES[name], {
-            shouldPlay: false,
-          });
-          if (mounted) sounds.current[name] = sound;
-        } catch {
-          // Sound loading failure is non-fatal
-        }
+    for (const name of keys) {
+      try {
+        players.current[name] = createAudioPlayer(SOUND_FILES[name]);
+      } catch {
+        // Non-fatal — sounds are an enhancement, not required
       }
-    })();
+    }
 
     return () => {
-      mounted = false;
-      for (const sound of Object.values(sounds.current)) {
-        sound?.unloadAsync();
+      for (const player of Object.values(players.current)) {
+        try { player?.remove(); } catch { /* ignore */ }
       }
-      sounds.current = {};
+      players.current = {};
     };
   }, []);
 
   const play = useCallback(async (name: SoundName) => {
     try {
-      const sound = sounds.current[name];
-      if (!sound) return;
-      await sound.setPositionAsync(0);
-      await sound.playAsync();
+      const player = players.current[name];
+      if (!player) return;
+      await player.seekTo(0);
+      player.play();
     } catch {
-      // Ignore playback errors (e.g. sound not loaded yet)
+      // Ignore playback errors
     }
   }, []);
 

@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0d0d2b"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.wordquest.universe"
@@ -34,7 +36,8 @@
         {
           "microphonePermission": "WordQuest needs your microphone to hear you read words aloud!"
         }
-      ]
+      ],
+      "expo-audio"
     ]
   }
 }
