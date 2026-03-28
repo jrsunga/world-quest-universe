@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,7 @@ import { Colors } from '../theme/colors';
 import { LetterTile } from '../components/LetterTile';
 import { WordSlot } from '../components/WordSlot';
 import { FunnyFailAnimation } from '../components/FunnyFailAnimation';
+import { WordHintImage } from '../components/WordHintImage';
 import { useGameState } from '../hooks/useGameState';
 import { useVoice } from '../hooks/useVoice';
 import { useSound } from '../hooks/useSound';
@@ -50,17 +52,36 @@ export function GameScreen({ navigation, route }: Props) {
     calcLevelStars,
   } = useGameState(level.words);
 
-  const { speakWord } = useVoice();
+  const { speakWord, speakTrivia, stopSpeaking } = useVoice();
   const { play } = useSound();
+
+  const [triviaReady, setTriviaReady] = useState(false);
 
   const isCorrect = state.phase === 'success' ? true : state.phase === 'fail' ? false : null;
   const tileSize = state.word.word.length <= 3 ? 68 : state.word.word.length <= 4 ? 62 : 54;
 
-  // Play sound + speak word on success
+  // On success: play sound, speak word (if voiceEnabled), then always read trivia aloud.
+  // Next button unlocks only after trivia finishes — essential for pre-readers.
   useEffect(() => {
-    if (state.phase === 'success') {
-      play('correct');
-      if (voiceEnabled) speakWord(state.word.word);
+    if (state.phase !== 'success') {
+      setTriviaReady(false);
+      return;
+    }
+
+    play('correct');
+
+    const readTrivia = () => {
+      if (!state.word.trivia) {
+        setTriviaReady(true);
+        return;
+      }
+      speakTrivia(state.word.trivia, () => setTriviaReady(true));
+    };
+
+    if (voiceEnabled) {
+      speakWord(state.word.word, readTrivia);
+    } else {
+      readTrivia();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
@@ -124,7 +145,7 @@ export function GameScreen({ navigation, route }: Props) {
 
         {/* Hint */}
         <View style={styles.hintArea}>
-          <Text style={styles.hintEmoji}>{state.word.hint}</Text>
+          <WordHintImage emoji={state.word.emoji} size={100} />
           <Text style={styles.hintLabel}>Spell this word!</Text>
         </View>
 
@@ -135,12 +156,19 @@ export function GameScreen({ navigation, route }: Props) {
 
         {/* Success banner */}
         {state.phase === 'success' && (
-          <View style={styles.successBanner}>
+          <ScrollView
+            style={styles.successBanner}
+            contentContainerStyle={styles.successBannerContent}
+            scrollEnabled={false}
+          >
             <Text style={styles.successText}>⭐ {state.word.word.toUpperCase()}! ⭐</Text>
             <Text style={styles.successSub}>
               {state.mistakes === 0 ? 'Perfect spelling!' : 'Great job!'}
             </Text>
-          </View>
+            {state.word.trivia ? (
+              <Text style={styles.triviaText}>💡 {state.word.trivia}</Text>
+            ) : null}
+          </ScrollView>
         )}
 
         {/* Letter tiles */}
@@ -166,18 +194,30 @@ export function GameScreen({ navigation, route }: Props) {
             </TouchableOpacity>
           )}
           {state.phase === 'success' && (
-            <TouchableOpacity onPress={nextWord} style={styles.nextBtn}>
-              <LinearGradient
-                colors={[Colors.gold, Colors.orange]}
-                style={styles.nextGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.nextText}>
-                  {wordIndex + 1 < wordCount ? 'Next Word →' : 'Level Complete! 🎉'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            triviaReady ? (
+              <TouchableOpacity onPress={nextWord} style={styles.nextBtn}>
+                <LinearGradient
+                  colors={[Colors.gold, Colors.orange]}
+                  style={styles.nextGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.nextText}>
+                    {wordIndex + 1 < wordCount ? 'Next Word →' : 'Level Complete! 🎉'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.speakingRow}>
+                <Text style={styles.speakingText}>🔊 Listening...</Text>
+                <TouchableOpacity
+                  onPress={() => { stopSpeaking(); setTriviaReady(true); }}
+                  style={styles.skipBtn}
+                >
+                  <Text style={styles.skipText}>Skip →</Text>
+                </TouchableOpacity>
+              </View>
+            )
           )}
         </View>
 
@@ -237,7 +277,6 @@ const styles = StyleSheet.create({
   worldIcon: { fontSize: 28 },
 
   hintArea: { alignItems: 'center', paddingVertical: 16 },
-  hintEmoji: { fontSize: 80, marginBottom: 8 },
   hintLabel: {
     color: Colors.softWhite,
     fontSize: 14,
@@ -252,19 +291,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(76,175,80,0.2)',
     borderRadius: 16,
     marginHorizontal: 24,
-    padding: 14,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(76,175,80,0.4)',
     marginBottom: 8,
+    maxHeight: 120,
+  },
+  successBannerContent: {
+    padding: 14,
+    alignItems: 'center',
   },
   successText: { color: Colors.gold, fontSize: 20, fontWeight: '900', letterSpacing: 2 },
   successSub: { color: Colors.softWhite, fontSize: 13, fontWeight: '600', marginTop: 4 },
+  triviaText: {
+    color: Colors.lavender,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
 
   tilesArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 16 },
   tilesRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 
-  actionsRow: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
+  actionsRow: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8, minHeight: 68 },
   clearBtn: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
@@ -275,4 +325,17 @@ const styles = StyleSheet.create({
   nextBtn: { borderRadius: 16, overflow: 'hidden' },
   nextGradient: { paddingVertical: 18, alignItems: 'center' },
   nextText: { color: Colors.deepSpace, fontSize: 18, fontWeight: '900' },
+
+  speakingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  speakingText: { color: Colors.softWhite, fontSize: 15, fontWeight: '700' },
+  skipBtn: { paddingVertical: 4, paddingHorizontal: 12 },
+  skipText: { color: Colors.dimWhite, fontSize: 14, fontWeight: '600' },
 });

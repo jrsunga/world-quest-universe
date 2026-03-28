@@ -23,7 +23,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d0d2b"
       },
-      "package": "com.wordquest.universe"
+      "package": "com.wordquest.universe",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -31,13 +37,12 @@
     },
     "plugins": [
       "expo-font",
-      [
-        "expo-av",
-        {
-          "microphonePermission": "WordQuest needs your microphone to hear you read words aloud!"
-        }
-      ],
       "expo-audio"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9ce07ea0-963f-4f21-8509-2b2b84e5d7e7"
+      }
+    }
   }
 }
