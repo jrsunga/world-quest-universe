@@ -1,11 +1,5 @@
 import React, { useRef } from 'react';
-import {
-  TouchableOpacity,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { World } from '../data/worlds';
 import { Colors } from '../theme/colors';
@@ -21,7 +15,6 @@ export function WorldCard({ world, isSelected, isRecommended, onPress }: Props) 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
-    if (world.locked) return;
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.96, duration: 80, useNativeDriver: true }),
       Animated.timing(scaleAnim, { toValue: 1.02, duration: 80, useNativeDriver: true }),
@@ -32,14 +25,10 @@ export function WorldCard({ world, isSelected, isRecommended, onPress }: Props) 
 
   return (
     <Animated.View style={{ transform: [{ scale: scaleAnim }], marginBottom: 14 }}>
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.9} disabled={world.locked}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
         <LinearGradient
-          colors={world.locked ? ['#1a1a3a', '#1a1a3a'] : world.bgGradient}
-          style={[
-            styles.card,
-            isSelected && styles.selected,
-            world.locked && styles.locked,
-          ]}
+          colors={world.bgGradient}
+          style={[styles.card, isSelected && styles.selected]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
@@ -50,15 +39,11 @@ export function WorldCard({ world, isSelected, isRecommended, onPress }: Props) 
           )}
 
           <View style={styles.row}>
-            <Text style={styles.icon}>{world.locked ? '🔒' : world.icon}</Text>
+            <Text style={styles.icon}>{world.icon}</Text>
             <View style={styles.info}>
-              <Text style={[styles.name, world.locked && styles.lockedText]}>
-                {world.name}
-              </Text>
-              <Text style={styles.ageRange}>{world.ageRange} · {world.subtitle}</Text>
-              <Text style={[styles.desc, world.locked && styles.lockedText]} numberOfLines={2}>
-                {world.description}
-              </Text>
+              <Text style={styles.name}>{world.name}</Text>
+              <Text style={styles.subtitle}>{world.subtitle}</Text>
+              <Text style={styles.desc} numberOfLines={2}>{world.description}</Text>
             </View>
           </View>
 
@@ -84,28 +69,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.mint,
     borderWidth: 2,
   },
-  locked: {
-    borderColor: 'rgba(255,255,255,0.06)',
-    opacity: 0.55,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  icon: {
-    fontSize: 44,
-  },
-  info: {
-    flex: 1,
-  },
-  name: {
-    color: Colors.white,
-    fontWeight: '800',
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  ageRange: {
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  icon: { fontSize: 44 },
+  info: { flex: 1 },
+  name: { color: Colors.white, fontWeight: '800', fontSize: 18, marginBottom: 2 },
+  subtitle: {
     color: Colors.gold,
     fontSize: 11,
     fontWeight: '700',
@@ -113,14 +81,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  desc: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  lockedText: {
-    color: 'rgba(255,255,255,0.35)',
-  },
+  desc: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 },
   recommendedBadge: {
     backgroundColor: 'rgba(78,205,196,0.2)',
     borderRadius: 20,
@@ -131,11 +92,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(78,205,196,0.3)',
   },
-  recommendedText: {
-    color: Colors.mint,
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  recommendedText: { color: Colors.mint, fontSize: 11, fontWeight: '700' },
   checkBadge: {
     position: 'absolute',
     top: 14,
@@ -147,9 +104,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkText: {
-    color: Colors.deepSpace,
-    fontWeight: '900',
-    fontSize: 15,
-  },
+  checkText: { color: Colors.deepSpace, fontWeight: '900', fontSize: 15 },
 });

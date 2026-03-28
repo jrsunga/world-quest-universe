@@ -23,6 +23,7 @@ export type RootStackParamList = {
   Result: {
     worldId: WorldId;
     levelId: number;
+    totalLevels: number;
     stars: number;
     playerAge: number;
     playerName: string;

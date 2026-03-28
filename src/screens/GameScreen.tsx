@@ -15,7 +15,8 @@ import { WordSlot } from '../components/WordSlot';
 import { FunnyFailAnimation } from '../components/FunnyFailAnimation';
 import { useGameState } from '../hooks/useGameState';
 import { useVoice } from '../hooks/useVoice';
-import { getLevelsForAge } from '../data/words';
+import { useSound } from '../hooks/useSound';
+import { getLevelsForAgeAndWorld } from '../data/words';
 import { saveLevelResult } from '../store/gameStore';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { WORLDS } from '../data/worlds';
@@ -25,10 +26,16 @@ type Props = {
   route: RouteProp<RootStackParamList, 'Game'>;
 };
 
+const TIER_LABEL: Record<string, string> = {
+  easy: '3-letter words',
+  medium: '4-letter words',
+  hard: '5-letter words',
+};
+
 export function GameScreen({ navigation, route }: Props) {
   const { worldId, playerAge, playerName, levelId, voiceEnabled } = route.params;
 
-  const levels = getLevelsForAge(playerAge);
+  const levels = getLevelsForAgeAndWorld(playerAge, worldId);
   const level = levels.find((l) => l.id === levelId) ?? levels[0];
   const world = WORLDS.find((w) => w.id === worldId)!;
 
@@ -44,27 +51,36 @@ export function GameScreen({ navigation, route }: Props) {
   } = useGameState(level.words);
 
   const { speakWord } = useVoice();
+  const { play } = useSound();
 
   const isCorrect = state.phase === 'success' ? true : state.phase === 'fail' ? false : null;
+  const tileSize = state.word.word.length <= 3 ? 68 : state.word.word.length <= 4 ? 62 : 54;
 
-  // Speak word on success if voice enabled — only re-run when phase changes
+  // Play sound + speak word on success
   useEffect(() => {
-    if (state.phase === 'success' && voiceEnabled) {
-      speakWord(state.word.word);
+    if (state.phase === 'success') {
+      play('correct');
+      if (voiceEnabled) speakWord(state.word.word);
     }
-    // speakWord is stable (useCallback); voiceEnabled and word are intentionally
-    // excluded so this only fires on phase transition, not on every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  // Navigate to result when level done — route params don't change mid-game
+  // Play tap sound via callback passed down
+  const handleTap = (slot: Parameters<typeof tapLetter>[0]) => {
+    play('tap');
+    tapLetter(slot);
+  };
+
+  // Navigate to result when level done
   useEffect(() => {
     if (levelComplete) {
+      play('complete');
       const stars = calcLevelStars();
       saveLevelResult(worldId, levelId, stars).then(() => {
         navigation.replace('Result', {
           worldId,
           levelId,
+          totalLevels: levels.length,
           stars,
           playerAge,
           playerName,
@@ -72,16 +88,12 @@ export function GameScreen({ navigation, route }: Props) {
         });
       });
     }
-    // calcLevelStars, navigation, and route params are stable for the lifetime
-    // of this screen — intentionally excluded to avoid double-navigation
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelComplete]);
 
   const handleFailDone = () => {
     clearPlaced();
   };
-
-  const tileSize = state.word.word.length <= 4 ? 64 : state.word.word.length <= 6 ? 56 : 50;
 
   return (
     <LinearGradient colors={world.bgGradient} style={styles.gradient}>
@@ -93,9 +105,11 @@ export function GameScreen({ navigation, route }: Props) {
             <Text style={styles.backText}>✕</Text>
           </TouchableOpacity>
           <View style={styles.progressArea}>
-            <Text style={styles.progressText}>
-              Word {wordIndex + 1} of {wordCount}
-            </Text>
+            <View style={styles.progressTopRow}>
+              <Text style={styles.progressText}>Word {wordIndex + 1}/{wordCount}</Text>
+              <Text style={styles.tierLabel}>{TIER_LABEL[level.tier] ?? ''}</Text>
+              <Text style={styles.levelText}>Lvl {levelId}/{levels.length}</Text>
+            </View>
             <View style={styles.progressBar}>
               <View
                 style={[
@@ -108,7 +122,7 @@ export function GameScreen({ navigation, route }: Props) {
           <Text style={styles.worldIcon}>{world.icon}</Text>
         </View>
 
-        {/* Hint / word emoji */}
+        {/* Hint */}
         <View style={styles.hintArea}>
           <Text style={styles.hintEmoji}>{state.word.hint}</Text>
           <Text style={styles.hintLabel}>Spell this word!</Text>
@@ -119,7 +133,7 @@ export function GameScreen({ navigation, route }: Props) {
           <WordSlot slots={state.placed} correct={isCorrect} size={tileSize} />
         </View>
 
-        {/* Feedback banner */}
+        {/* Success banner */}
         {state.phase === 'success' && (
           <View style={styles.successBanner}>
             <Text style={styles.successText}>⭐ {state.word.word.toUpperCase()}! ⭐</Text>
@@ -137,7 +151,7 @@ export function GameScreen({ navigation, route }: Props) {
                 key={slot.id}
                 letter={slot.letter}
                 used={slot.used}
-                onPress={() => tapLetter(slot)}
+                onPress={() => handleTap(slot)}
                 size={tileSize}
               />
             ))}
@@ -167,7 +181,7 @@ export function GameScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Funny fail overlay */}
+        {/* Fail animation */}
         <FunnyFailAnimation
           world={worldId}
           visible={state.phase === 'fail'}
@@ -201,12 +215,14 @@ const styles = StyleSheet.create({
   },
   backText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
   progressArea: { flex: 1 },
-  progressText: {
-    color: Colors.softWhite,
-    fontSize: 12,
-    fontWeight: '700',
+  progressTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
+  progressText: { color: Colors.softWhite, fontSize: 11, fontWeight: '700' },
+  tierLabel: { color: Colors.mint, fontSize: 11, fontWeight: '700' },
+  levelText: { color: Colors.gold, fontSize: 11, fontWeight: '700' },
   progressBar: {
     height: 6,
     backgroundColor: 'rgba(255,255,255,0.2)',
@@ -220,21 +236,17 @@ const styles = StyleSheet.create({
   },
   worldIcon: { fontSize: 28 },
 
-  hintArea: { alignItems: 'center', paddingVertical: 20 },
+  hintArea: { alignItems: 'center', paddingVertical: 16 },
   hintEmoji: { fontSize: 80, marginBottom: 8 },
   hintLabel: {
     color: Colors.softWhite,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
 
-  slotsArea: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
+  slotsArea: { alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
 
   successBanner: {
     backgroundColor: 'rgba(76,175,80,0.2)',
@@ -246,35 +258,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(76,175,80,0.4)',
     marginBottom: 8,
   },
-  successText: {
-    color: Colors.gold,
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 2,
-  },
-  successSub: {
-    color: Colors.softWhite,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 4,
-  },
+  successText: { color: Colors.gold, fontSize: 20, fontWeight: '900', letterSpacing: 2 },
+  successSub: { color: Colors.softWhite, fontSize: 13, fontWeight: '600', marginTop: 4 },
 
-  tilesArea: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  tilesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
+  tilesArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 16 },
+  tilesRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 
-  actionsRow: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 8,
-  },
+  actionsRow: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
   clearBtn: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
@@ -282,17 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clearText: { color: Colors.softWhite, fontSize: 15, fontWeight: '700' },
-  nextBtn: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  nextGradient: {
-    paddingVertical: 18,
-    alignItems: 'center',
-  },
-  nextText: {
-    color: Colors.deepSpace,
-    fontSize: 18,
-    fontWeight: '900',
-  },
+  nextBtn: { borderRadius: 16, overflow: 'hidden' },
+  nextGradient: { paddingVertical: 18, alignItems: 'center' },
+  nextText: { color: Colors.deepSpace, fontSize: 18, fontWeight: '900' },
 });

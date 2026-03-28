@@ -23,6 +23,11 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         __DEV__: 'readonly',
+        // React Native / Metro bundler globals
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        global: 'readonly',
       },
     },
     plugins: {

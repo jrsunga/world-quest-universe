@@ -13,7 +13,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Colors } from '../theme/colors';
 import { StarRating } from '../components/StarRating';
-import { getLevelsForAge } from '../data/words';
+import { getLevelsForAgeAndWorld } from '../data/words';
 import { WORLDS } from '../data/worlds';
 import { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -36,11 +36,11 @@ const REWARDS: Record<number, { icon: string; label: string }> = {
 };
 
 export function ResultScreen({ navigation, route }: Props) {
-  const { worldId, levelId, stars, playerAge, playerName, voiceEnabled } = route.params;
+  const { worldId, levelId, totalLevels, stars, playerAge, playerName, voiceEnabled } = route.params;
 
-  const levels = getLevelsForAge(playerAge);
+  const levels = getLevelsForAgeAndWorld(playerAge, worldId);
   const world = WORLDS.find((w) => w.id === worldId)!;
-  const hasNextLevel = levelId < levels.length;
+  const hasNextLevel = levelId < (totalLevels ?? levels.length);
   const reward = REWARDS[levelId];
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -102,7 +102,7 @@ export function ResultScreen({ navigation, route }: Props) {
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>Level</Text>
-                <Text style={styles.statValue}>{levelId} / {levels.length}</Text>
+                <Text style={styles.statValue}>{levelId} / {totalLevels ?? levels.length}</Text>
               </View>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>Stars earned</Text>
@@ -123,6 +123,7 @@ export function ResultScreen({ navigation, route }: Props) {
                     voiceEnabled,
                   })
                 }
+
                 activeOpacity={0.85}
               >
                 <LinearGradient
