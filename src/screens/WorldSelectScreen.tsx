@@ -28,7 +28,6 @@ export function WorldSelectScreen({ navigation, route }: Props) {
   const [selectedWorld, setSelectedWorld] = useState<WorldId>(recommended);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
-  // Unlock worlds based on age
   const worldsWithUnlock = WORLDS.map((w) => ({
     ...w,
     locked: playerAge < w.ageMin && w.id !== recommended,
@@ -47,19 +46,19 @@ export function WorldSelectScreen({ navigation, route }: Props) {
   return (
     <LinearGradient colors={[Colors.deepSpace, '#111144']} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
+        {/* Scrollable content */}
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.greeting}>
-              Welcome, {playerName}! 🎉
-            </Text>
-            <Text style={styles.subtitle}>
-              Age {playerAge} · Choose your world
-            </Text>
+            <Text style={styles.greeting}>Welcome, {playerName}! 🎉</Text>
+            <Text style={styles.subtitle}>Age {playerAge} · Choose your world</Text>
           </View>
 
-          {/* The Blank villain intro */}
+          {/* Villain intro */}
           <View style={styles.villainBox}>
             <Text style={styles.villainEmoji}>😈</Text>
             <View style={styles.villainText}>
@@ -86,9 +85,7 @@ export function WorldSelectScreen({ navigation, route }: Props) {
           <View style={styles.voiceRow}>
             <View style={styles.voiceInfo}>
               <Text style={styles.voiceLabel}>🎤 Read Aloud Mode</Text>
-              <Text style={styles.voiceDesc}>
-                Say each word out loud after spelling it!
-              </Text>
+              <Text style={styles.voiceDesc}>Say each word out loud after spelling it!</Text>
             </View>
             <Switch
               value={voiceEnabled}
@@ -97,22 +94,10 @@ export function WorldSelectScreen({ navigation, route }: Props) {
               thumbColor={voiceEnabled ? Colors.deepSpace : Colors.dimWhite}
             />
           </View>
+        </ScrollView>
 
-          {/* Start button */}
-          <TouchableOpacity onPress={handlePlay} activeOpacity={0.85} style={styles.startBtn}>
-            <LinearGradient
-              colors={[Colors.gold, Colors.orange]}
-              style={styles.startGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.startText}>
-                {WORLDS.find((w) => w.id === selectedWorld)?.icon} Begin Level 1!
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          {/* Stats row */}
+        {/* Sticky footer — always visible */}
+        <View style={styles.footer}>
           <View style={styles.statsRow}>
             {[
               { icon: '⭐', label: '0', sub: 'Stars' },
@@ -126,7 +111,21 @@ export function WorldSelectScreen({ navigation, route }: Props) {
               </View>
             ))}
           </View>
-        </ScrollView>
+
+          <TouchableOpacity onPress={handlePlay} activeOpacity={0.85} style={styles.startBtn}>
+            <LinearGradient
+              colors={[Colors.gold, Colors.orange]}
+              style={styles.startGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.startText}>
+                {WORLDS.find((w) => w.id === selectedWorld)?.icon} Begin Level 1!
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
       </SafeAreaView>
     </LinearGradient>
   );
@@ -138,12 +137,12 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 12,
   },
 
   header: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 20,
   },
   greeting: {
     color: Colors.gold,
@@ -163,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,82,82,0.1)',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,82,82,0.25)',
     gap: 14,
@@ -196,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBg,
     borderRadius: 16,
     padding: 16,
-    marginVertical: 16,
+    marginVertical: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
     gap: 12,
@@ -213,18 +212,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  // Sticky footer
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(13,13,43,0.95)',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: Colors.cardBg,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
+  statItem: { alignItems: 'center' },
+  statIcon: { fontSize: 20, marginBottom: 2 },
+  statValue: {
+    color: Colors.gold,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  statLabel: {
+    color: Colors.dimWhite,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+
   startBtn: {
-    borderRadius: 20,
+    borderRadius: 18,
     overflow: 'hidden',
-    marginBottom: 24,
     shadowColor: Colors.gold,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 8,
   },
   startGradient: {
-    paddingVertical: 20,
+    paddingVertical: 18,
     alignItems: 'center',
   },
   startText: {
@@ -232,27 +263,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     letterSpacing: 0.5,
-  },
-
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: Colors.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  statItem: { alignItems: 'center' },
-  statIcon: { fontSize: 24, marginBottom: 4 },
-  statValue: {
-    color: Colors.gold,
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  statLabel: {
-    color: Colors.dimWhite,
-    fontSize: 11,
-    fontWeight: '600',
   },
 });
