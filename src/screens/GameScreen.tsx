@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,7 +37,6 @@ export function GameScreen({ navigation, route }: Props) {
     wordIndex,
     wordCount,
     levelComplete,
-    totalMistakes,
     tapLetter,
     clearPlaced,
     nextWord,
@@ -49,14 +47,17 @@ export function GameScreen({ navigation, route }: Props) {
 
   const isCorrect = state.phase === 'success' ? true : state.phase === 'fail' ? false : null;
 
-  // Speak word on success if voice enabled
+  // Speak word on success if voice enabled — only re-run when phase changes
   useEffect(() => {
     if (state.phase === 'success' && voiceEnabled) {
       speakWord(state.word.word);
     }
+    // speakWord is stable (useCallback); voiceEnabled and word are intentionally
+    // excluded so this only fires on phase transition, not on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  // Navigate to result when level done
+  // Navigate to result when level done — route params don't change mid-game
   useEffect(() => {
     if (levelComplete) {
       const stars = calcLevelStars();
@@ -71,6 +72,9 @@ export function GameScreen({ navigation, route }: Props) {
         });
       });
     }
+    // calcLevelStars, navigation, and route params are stable for the lifetime
+    // of this screen — intentionally excluded to avoid double-navigation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelComplete]);
 
   const handleFailDone = () => {

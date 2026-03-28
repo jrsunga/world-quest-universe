@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 
 interface Props {
   stars: number;  // 0–3
@@ -26,7 +26,8 @@ export function StarRating({ stars, size = 36 }: Props) {
       ]),
     );
     Animated.parallel(animations).start();
-  }, [stars]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stars]); // anims are stable Animated.Value refs — intentionally omitted
 
   return (
     <View style={styles.row}>

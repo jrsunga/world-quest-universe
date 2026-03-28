@@ -22,7 +22,8 @@ export function WordSlot({ slots, correct, size = 52 }: Props) {
         Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
       ]).start();
     }
-  }, [correct]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [correct]); // shakeAnim is a stable Animated.Value ref — intentionally omitted
 
   return (
     <Animated.View

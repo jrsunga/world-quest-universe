@@ -59,7 +59,8 @@ export function ResultScreen({ navigation, route }: Props) {
         useNativeDriver: true,
       }).start();
     });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Animated.Value refs are stable — intentionally omitted
 
   return (
     <LinearGradient colors={[Colors.deepSpace, '#111144']} style={styles.gradient}>

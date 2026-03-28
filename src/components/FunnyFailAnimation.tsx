@@ -10,7 +10,7 @@
  *   starReader  → rocket spinning 🚀💫
  */
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { WorldId } from '../data/worlds';
 
 // Uncomment when Lottie JSON assets are ready:
@@ -72,7 +72,8 @@ export function FunnyFailAnimation({ world, visible, onDone }: Props) {
         useNativeDriver: true,
       }),
     ]).start(() => onDone?.());
-  }, [visible]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]); // Animated.Value refs are stable — intentionally omitted
 
   if (!visible) return null;
 
